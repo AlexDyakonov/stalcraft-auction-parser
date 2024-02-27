@@ -30,3 +30,38 @@
 *.exe
 *.out
 *.app
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+CMakeScripts/
+
+# build
+build/
+
+# Settings and other
+*.user
+*.user.*
+*.suo
+*.ide
+.vs/
+.vscode/
+
+# logs
+*.log
+
+# CLion, IDE
+.idea/
+*.iml
+
+# tmp files
+*.swp
+*.swo
+*~
+
+# Qt files
+moc_*
+qrc_*
+ui_*
