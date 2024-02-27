@@ -1,0 +1,1 @@
+# stalcraft-auction-parser
