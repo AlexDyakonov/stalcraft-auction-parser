@@ -6,7 +6,12 @@ set(CMAKE_CXX_STANDARD 17)
 include(CTest)
 enable_testing()
 
-add_executable(stalcraft-auction-parser src/main.cpp)
+configure_file(${CMAKE_SOURCE_DIR}/.env ${CMAKE_BINARY_DIR}/.env COPYONLY)
+
+add_executable(stalcraft-auction-parser 
+    src/main.cpp
+    src/utils/utils.cpp
+    )
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

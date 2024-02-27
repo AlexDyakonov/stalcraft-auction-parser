@@ -1,0 +1,19 @@
+version: '3'
+services:
+  clickhouse-server:
+    image: yandex/clickhouse-server:latest
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    env_file:
+      - .env
+
+  tabix:
+    image: spoonest/clickhouse-tabix-web-client:latest
+    ports:
+      - "8080:80"
+
+volumes:
+  clickhouse_data:
