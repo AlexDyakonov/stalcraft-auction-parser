@@ -8,8 +8,11 @@
 class DatabaseManager {
 public:
     DatabaseManager(); 
+    ~DatabaseManager();
 
     clickhouse::Client* getClient();
+    void closeConnection();
+    int initializeTables();
 
 private:
     std::unique_ptr<clickhouse::Client> client;
