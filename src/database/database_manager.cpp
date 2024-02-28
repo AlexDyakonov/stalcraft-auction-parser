@@ -9,8 +9,6 @@ extern std::shared_ptr<spdlog::logger> logger;
 
 DatabaseManager::DatabaseManager() {
     try {
-        utils::loadEnvVariables(".env");
-
         clickhouse::ClientOptions options;
         options.SetHost(std::getenv("CLICKHOUSE_HOST"))
                .SetPort(std::atoi(std::getenv("CLICKHOUSE_PORT")))

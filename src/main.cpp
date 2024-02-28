@@ -13,6 +13,7 @@
 #include "database/database_manager.hpp"
 #include "utils/logger_macros.hpp" 
 #include "database/auction_item_repository.hpp"
+#include "api/api_client.hpp"
 
 std::shared_ptr<spdlog::logger> logger;
 
@@ -20,6 +21,10 @@ int main(int argc, char* argv[])
 {    
     logger = spdlog::basic_logger_mt("logger", "debug.log");
     spdlog::set_default_logger(logger);
+
+    utils::loadEnvVariables(".env");
+
+    std::cout << api_client::getItemTotal("4q7pl", std::getenv("EXBO_TOKEN")) << std::endl;
 
     DatabaseManager dbManager; 
 
@@ -33,7 +38,7 @@ int main(int argc, char* argv[])
         item.time = "2023-01-01 00:00:00";
         item.additional = "{\"key\": \"value\"}"; 
 
-        itemRepository.AddItem(item);
+        // itemRepository.AddItem(item);
 
         std::cout << "Item successfully added to the database." << std::endl;
     } catch (const std::exception& e) {
