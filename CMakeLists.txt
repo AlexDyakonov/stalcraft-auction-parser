@@ -23,15 +23,20 @@ FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/libcpr/cpr.git
                          GIT_TAG 1ad1cd2daf138aefdcdb1c35d99608387d230ec1) # Replace with your desired git commit from: https://github.com/libcpr/cpr/releases
 FetchContent_MakeAvailable(cpr)
 
-target_link_libraries(stalcraft-auction-parser PRIVATE cpr::cpr)
+target_link_libraries(${PROJECT_NAME} PRIVATE cpr::cpr)
 
 FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
 FetchContent_MakeAvailable(json)
 
-target_link_libraries(stalcraft-auction-parser PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
 
 add_subdirectory(contribs/clickhouse-cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE contribs/clickhouse-cpp/ contribs/clickhouse-cpp/contrib/absl)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE clickhouse-cpp-lib)
+
+add_subdirectory(contribs/spdlog)
+
+target_include_directories(${PROJECT_NAME} PRIVATE contribs/spdlog/)
+target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog)
