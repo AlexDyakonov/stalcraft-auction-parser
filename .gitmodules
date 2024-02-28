@@ -1,3 +1,6 @@
 [submodule "contribs/clickhouse-cpp"]
 	path = contribs/clickhouse-cpp
 	url = https://github.com/ClickHouse/clickhouse-cpp.git
+[submodule "contribs/spdlog"]
+	path = contribs/spdlog
+	url = https://github.com/gabime/spdlog.git
