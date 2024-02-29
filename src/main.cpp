@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
     }
 
     int64_t total = api_client::getItemTotal("4q7pl", std::getenv("EXBO_TOKEN"));
-    
+
     const size_t numThreads = 10;
     std::vector<std::thread> threads;
 
@@ -60,11 +60,6 @@ int main(int argc, char* argv[])
     auto delta1 = end1 - start1;
 
     std::cout << "Время выполнения: " << std::chrono::duration <double, std::milli> (delta1).count() << " миллисекунд" << std::endl;    
-
-    
-
-
-    
 
     return 0;
 }
