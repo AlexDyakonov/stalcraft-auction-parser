@@ -25,8 +25,12 @@ int main(int argc, char* argv[])
     utils::loadEnvVariables(".env");
 
     
-api_client::getItemPrices("4q7pl", 200, 200, std::getenv("EXBO_TOKEN"));
+    std::vector<AuctionItem> items =  utils::parseJsonToAuctionItems(api_client::getItemPrices("4q7pl", 200, 200, std::getenv("EXBO_TOKEN")), "4q7pl");
+    
+
     DatabaseManager dbManager; 
+    AuctionItemRepository ai_repo(dbManager);
+    ai_repo.AddItems(items);
 
 
     if (argc > 1 && (std::strcmp(argv[1], "--build-tables") == 0 || std::strcmp(argv[1], "--bt") == 0)) {

@@ -22,7 +22,7 @@ struct AuctionItem
         : itemId(j.at("itemId").get<std::string>()),
           amount(j.at("amount").get<int>()),
           price(j.at("price").get<double>()),
-          time(j.at("time").get<std::string>()),
+          time(j.at("time").get<std::string>().replace(10, 1, " ").replace(19, 1, "")),
           additional(j.at("additional")) {}
 };
 

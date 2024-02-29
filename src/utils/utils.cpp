@@ -55,10 +55,10 @@ namespace utils {
         if (j.contains("prices") && j["prices"].is_array()) {
             items.reserve(j["prices"].size());
 
-            for (const auto &item : j["prices"]) {
-                json itemWithId = item;
-                itemWithId["itemId"] = itemId;
-                items.emplace_back(itemWithId);
+            for (auto &item : j["prices"]) {
+            item["itemId"] = itemId;
+            item["time"] = item["time"].get<std::string>().replace(10, 1, " ").replace(19, 1, "");
+            items.emplace_back(item);
             }
         }
 

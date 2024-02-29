@@ -3,7 +3,6 @@
 
 #include "clickhouse/client.h"
 #include <memory>
-#include "../utils/utils.hpp"
 
 class DatabaseManager {
 public:
