@@ -30,6 +30,7 @@ class AuctionItemRepository {
 public:
     AuctionItemRepository(DatabaseManager& dbManager);
     void AddItem(const AuctionItem& item);
+    void AddItems(const std::vector<AuctionItem>& items);
 
 private:
     DatabaseManager& dbManager;

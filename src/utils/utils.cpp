@@ -6,6 +6,10 @@
 #include <unistd.h> 
 #include <cstring>
 #include "logger_macros.hpp"
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+#include "../database/auction_item_repository.hpp"
+
 
 extern std::shared_ptr<spdlog::logger> logger;
 
@@ -42,5 +46,22 @@ namespace utils {
         } else {
             LOG_ERROR("Error while retrieving the current working directory");
         }
+    }
+
+    std::vector<AuctionItem> parseJsonToAuctionItems(const std::string &jsonString, const std::string &itemId) {
+        auto j = json::parse(jsonString);
+        std::vector<AuctionItem> items;
+
+        if (j.contains("prices") && j["prices"].is_array()) {
+            items.reserve(j["prices"].size());
+
+            for (const auto &item : j["prices"]) {
+                json itemWithId = item;
+                itemWithId["itemId"] = itemId;
+                items.emplace_back(itemWithId);
+            }
+        }
+
+        return items;
     }
 }

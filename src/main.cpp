@@ -24,27 +24,9 @@ int main(int argc, char* argv[])
 
     utils::loadEnvVariables(".env");
 
-    std::cout << api_client::getItemTotal("4q7pl", std::getenv("EXBO_TOKEN")) << std::endl;
-
+    
+api_client::getItemPrices("4q7pl", 200, 200, std::getenv("EXBO_TOKEN"));
     DatabaseManager dbManager; 
-
-    try {
-        AuctionItemRepository itemRepository(dbManager);
-
-        AuctionItem item;
-        item.itemId = "exampleItem123";
-        item.amount = 10;
-        item.price = 99.99;
-        item.time = "2023-01-01 00:00:00";
-        item.additional = "{\"key\": \"value\"}"; 
-
-        // itemRepository.AddItem(item);
-
-        std::cout << "Item successfully added to the database." << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "An error occurred: " << e.what() << std::endl;
-        return 1;
-    }    
 
 
     if (argc > 1 && (std::strcmp(argv[1], "--build-tables") == 0 || std::strcmp(argv[1], "--bt") == 0)) {
