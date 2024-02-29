@@ -39,7 +39,6 @@ int DatabaseManager::initializeTables(){
     DatabaseManager manager;
     clickhouse::Client* client = manager.getClient();
 
-    client->Execute("CREATE TABLE IF NOT EXISTS item_auction_info (uuid UUID DEFAULT generateUUIDv4(), itemId String, amount Int32, price Float64, time DateTime, additional String) ENGINE = MergeTree() ORDER BY (itemId, time, uuid);");
-    
+client->Execute("CREATE TABLE IF NOT EXISTS item_auction_info (uuid UUID DEFAULT generateUUIDv4(), itemId String, amount Int32, price Float64, time DateTime, additional String, server String) ENGINE = MergeTree() ORDER BY (itemId, time, uuid);");    
     return 0;
 }

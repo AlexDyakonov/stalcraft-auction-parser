@@ -56,9 +56,10 @@ namespace utils {
             items.reserve(j["prices"].size());
 
             for (auto &item : j["prices"]) {
-            item["itemId"] = itemId;
-            item["time"] = item["time"].get<std::string>().replace(10, 1, " ").replace(19, 1, "");
-            items.emplace_back(item);
+                item["server"] = "ru";
+                item["itemId"] = itemId;
+                item["time"] = item["time"].get<std::string>().replace(10, 1, " ").replace(19, 1, "");
+                items.emplace_back(item);
             }
         }
 

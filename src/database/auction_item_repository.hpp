@@ -11,6 +11,7 @@ using json = nlohmann::json;
 struct AuctionItem
 {
     std::string itemId;
+    std::string server;
     int amount;
     double price;
     std::string time;
@@ -20,6 +21,7 @@ struct AuctionItem
 
     AuctionItem(const json& j)
         : itemId(j.at("itemId").get<std::string>()),
+          server(j.at("server").get<std::string>()),
           amount(j.at("amount").get<int>()),
           price(j.at("price").get<double>()),
           time(j.at("time").get<std::string>().replace(10, 1, " ").replace(19, 1, "")),
