@@ -8,6 +8,11 @@
 #include <iostream>
 #include <clickhouse/client.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <chrono> 
+#include <string>
+#include <fstream>
+#include <sstream>
+#include <cstdint> 
 
 #include "utils/utils.hpp"
 #include "database/database_manager.hpp"
@@ -24,13 +29,50 @@ int main(int argc, char* argv[])
 
     utils::loadEnvVariables(".env");
 
-    
-    std::vector<AuctionItem> items =  utils::parseJsonToAuctionItems(api_client::getItemPrices("4q7pl", 200, 200, std::getenv("EXBO_TOKEN")), "4q7pl");
-    
+    int64_t total = api_client::getItemTotal("4q7pl", std::getenv("EXBO_TOKEN"));
 
     DatabaseManager dbManager; 
-    AuctionItemRepository ai_repo(dbManager);
-    ai_repo.AddItems(items);
+
+
+    // DatabaseManager dbManager; 
+    // AuctionItemRepository ai_repo(dbManager);
+
+    // auto start1 = std::chrono::steady_clock::now();
+    // for(int i = 1; i <= 10; i++) {
+    //     int offset = total - i * 200;
+    //     std::vector<AuctionItem> items =  utils::parseJsonToAuctionItems(api_client::getItemPrices("4q7pl", 200, offset, std::getenv("EXBO_TOKEN")), "4q7pl");
+    //     ai_repo.AddItems(items);
+    // }
+    // auto end1 = std::chrono::steady_clock::now(); 
+    // auto delta1 = end1 - start1;
+
+    // std::cout << "Время выполнения: " << std::chrono::duration <double, std::milli> (delta1).count() << " миллисекунд" << std::endl;
+
+
+    const size_t numThreads = 10;
+    std::vector<std::thread> threads;
+
+    auto start1 = std::chrono::steady_clock::now();
+    for (int i = 10; i <= 20; i++) {
+        threads.emplace_back([i, total]() {
+            DatabaseManager dbManager; 
+            AuctionItemRepository ai_repo(dbManager);
+
+            int offset = total - i * 200;
+            std::vector<AuctionItem> items = utils::parseJsonToAuctionItems(api_client::getItemPrices("4q7pl", 200, offset, std::getenv("EXBO_TOKEN")), "4q7pl");
+            ai_repo.AddItems(items);
+        });
+    }
+
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    auto end1 = std::chrono::steady_clock::now(); 
+    auto delta1 = end1 - start1;
+
+    std::cout << "Время выполнения: " << std::chrono::duration <double, std::milli> (delta1).count() << " миллисекунд" << std::endl;    
+
+    
 
 
     if (argc > 1 && (std::strcmp(argv[1], "--build-tables") == 0 || std::strcmp(argv[1], "--bt") == 0)) {
