@@ -36,10 +36,33 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    std::vector<std::string> idVector = utils::readIdListFromFile("data/items_id_list.txt");
-    for (const auto& id : idVector) {
-        std::cout << "Read id: " << id << std::endl;
+    // std::vector<std::string> idVector = utils::readIdListFromFile("data/items_id_list");
+    // for (const auto& id : idVector) {
+    //     std::cout << "Read id: " << id << std::endl;
+    // }
+
+    const size_t numThreads = 10;
+    std::vector<std::thread> threads;
+
+    int64_t total = api_client::getItemTotal("eu", "4q7pl", std::getenv("EXBO_TOKEN"));
+    std::cout << total << std::endl;
+
+    std::string itemId = "4q7pl";
+    std::string server = "eu";
+
+    for (int i = 10; i < 20; i++) {
+        threads.emplace_back([i, total, server, itemId]() {
+            DatabaseManager dbManager; 
+            AuctionItemRepository ai_repo(dbManager);
+
+            int offset = total - i * 200;
+            std::vector<AuctionItem> items = utils::parseJsonToAuctionItems(api_client::getItemPrices(server, itemId, 200, offset, std::getenv("EXBO_TOKEN")), server, itemId);
+            ai_repo.AddItems(items);
+        });
     }
+    for (auto& thread : threads) {
+        thread.join();
+    }    
 
     return 0;
 }

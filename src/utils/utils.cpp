@@ -49,7 +49,7 @@ namespace utils {
         }
     }
 
-    std::vector<AuctionItem> parseJsonToAuctionItems(const std::string &jsonString, const std::string &itemId) {
+    std::vector<AuctionItem> parseJsonToAuctionItems(const std::string &jsonString, const std::string &server, const std::string &itemId) {
         auto j = json::parse(jsonString);
         std::vector<AuctionItem> items;
 
@@ -57,7 +57,7 @@ namespace utils {
             items.reserve(j["prices"].size());
 
             for (auto &item : j["prices"]) {
-                item["server"] = "ru";
+                item["server"] = server;
                 item["itemId"] = itemId;
                 item["time"] = item["time"].get<std::string>().replace(10, 1, " ").replace(19, 1, "");
                 items.emplace_back(item);
@@ -90,6 +90,22 @@ namespace utils {
         }
 
         return idList;
+    }
+
+    std::string getAuctionUrl(const std::string& server, const std::string& itemId) {
+        std::string url = "https://eapi.stalcraft.net/%server%/auction/%itemId%/history";
+
+        size_t pos = url.find("%server%");
+        if (pos != std::string::npos) {
+            url.replace(pos, 8, server);
+        }
+
+        pos = url.find("%itemId%");
+        if (pos != std::string::npos) {
+            url.replace(pos, 8, itemId);
+        }
+
+        return url;
     }
 
 }

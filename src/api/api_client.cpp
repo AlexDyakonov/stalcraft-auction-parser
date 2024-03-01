@@ -4,6 +4,9 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
+#include "../utils/utils.hpp"
+
+
 namespace api_client {
     std::string getBearerToken(std::string client_id, std::string client_secret){
     std::string url = "https://exbo.net/oauth/token";
@@ -38,16 +41,8 @@ namespace api_client {
         return -1;
     }
 
-    std::string getItemPrices(const std::string &itemId, int limit, int offset, std::string bearer){
-        std::string url = "https://eapi.stalcraft.net/ru/auction//history"; 
-
-        size_t pos = 0;
-
-        if ((pos = getPos(url)) == -1) {
-            return std::string();
-        }
-
-        url.insert(pos, itemId);
+    std::string getItemPrices(const std::string &server, const std::string &itemId, int limit, int offset, std::string bearer){
+        std::string url = utils::getAuctionUrl(server, itemId);     
 
         cpr::Response r = cpr::Get(cpr::Url{url},
                                cpr::Parameters{{"limit", std::to_string(limit)}, {"offset", std::to_string(offset)}},
@@ -58,16 +53,8 @@ namespace api_client {
         return r.text;
     }
 
-    int64_t getItemTotal(const std::string &itemId, std::string bearer){
-        std::string url = "https://eapi.stalcraft.net/ru/auction//history"; 
-
-        size_t pos = 0;
-
-        if ((pos = getPos(url)) == -1) {
-            return -1;
-        }
-
-        url.insert(pos, itemId);
+    int64_t getItemTotal(const std::string &server, const std::string &itemId, std::string bearer){
+        std::string url = utils::getAuctionUrl(server, itemId);     
 
         cpr::Response response = cpr::Get(cpr::Url{url},
                                cpr::Parameters{{"limit", std::to_string(1)}, {"offset", std::to_string(0)}},
