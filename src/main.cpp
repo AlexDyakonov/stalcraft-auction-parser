@@ -30,40 +30,16 @@ int main(int argc, char* argv[])
 
     utils::loadEnvVariables(".env");
 
-    DatabaseManager dbManager; 
-
     if (argc > 1 && (std::strcmp(argv[1], "--build-tables") == 0 || std::strcmp(argv[1], "--bt") == 0)) {
+        DatabaseManager dbManager; 
         dbManager.initializeTables();
         return 0;
     }
 
-    int64_t total = api_client::getItemTotal("4q7pl", std::getenv("EXBO_TOKEN"));
-
-    const size_t numThreads = 10;
-    std::vector<std::thread> threads;
-
-    auto start1 = std::chrono::steady_clock::now();
-    for (int i = 70; i < 80; i++) {
-        threads.emplace_back([i, total]() {
-            DatabaseManager dbManager; 
-            AuctionItemRepository ai_repo(dbManager);
-
-            int offset = total - i * 200;
-            std::vector<AuctionItem> items = utils::parseJsonToAuctionItems(api_client::getItemPrices("4q7pl", 200, offset, std::getenv("EXBO_TOKEN")), "4q7pl");
-            ai_repo.AddItems(items);
-        });
+    std::vector<std::string> idVector = utils::readIdListFromFile("data/items_id_list.txt");
+    for (const auto& id : idVector) {
+        std::cout << "Read id: " << id << std::endl;
     }
 
-    for (auto& thread : threads) {
-        thread.join();
-    }    
-    auto end1 = std::chrono::steady_clock::now(); 
-    auto end = std::chrono::system_clock::now();
-    auto delta1 = end1 - start1;
-
-    std::time_t end_time = std::chrono::system_clock::to_time_t(end);
-
-    std::cout << "Время выполнения: " << std::chrono::duration <double, std::milli> (delta1).count() << " миллисекунд" << std::endl;    
-    std::cout << "Время, когда выполнение закончилось: " << std::ctime(&end_time) << std::endl;
     return 0;
 }

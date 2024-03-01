@@ -7,6 +7,7 @@ include(CTest)
 enable_testing()
 
 configure_file(${CMAKE_SOURCE_DIR}/.env ${CMAKE_BINARY_DIR}/.env COPYONLY)
+file(COPY ${CMAKE_SOURCE_DIR}/src/data/ DESTINATION ${CMAKE_BINARY_DIR}/data)
 
 add_executable(stalcraft-auction-parser 
     src/main.cpp

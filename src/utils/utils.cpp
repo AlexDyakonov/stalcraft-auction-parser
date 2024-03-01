@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <unistd.h> 
 #include <cstring>
+#include <filesystem> 
 #include "logger_macros.hpp"
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -65,4 +66,30 @@ namespace utils {
 
         return items;
     }
+
+
+    std::vector<std::string> readIdListFromFile(const std::string& relativePath) {
+        std::string absolutePath = std::filesystem::absolute(relativePath);
+
+        std::ifstream file(absolutePath);
+        if (!file.is_open()) {
+            throw std::runtime_error("Cannot open file: " + absolutePath);
+        }
+
+        size_t linesCount = std::count(std::istreambuf_iterator<char>(file),
+                                    std::istreambuf_iterator<char>(), '\n');
+        file.clear();
+        file.seekg(0);
+
+        std::vector<std::string> idList;
+        idList.reserve(linesCount);
+
+        std::string line;
+        while (getline(file, line)) {
+            idList.push_back(line);
+        }
+
+        return idList;
+    }
+
 }
