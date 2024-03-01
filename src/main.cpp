@@ -13,6 +13,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstdint> 
+#include <ctime> 
 
 #include "utils/utils.hpp"
 #include "database/database_manager.hpp"
@@ -42,7 +43,7 @@ int main(int argc, char* argv[])
     std::vector<std::thread> threads;
 
     auto start1 = std::chrono::steady_clock::now();
-    for (int i = 10; i <= 20; i++) {
+    for (int i = 70; i < 80; i++) {
         threads.emplace_back([i, total]() {
             DatabaseManager dbManager; 
             AuctionItemRepository ai_repo(dbManager);
@@ -55,11 +56,14 @@ int main(int argc, char* argv[])
 
     for (auto& thread : threads) {
         thread.join();
-    }
+    }    
     auto end1 = std::chrono::steady_clock::now(); 
+    auto end = std::chrono::system_clock::now();
     auto delta1 = end1 - start1;
 
-    std::cout << "Время выполнения: " << std::chrono::duration <double, std::milli> (delta1).count() << " миллисекунд" << std::endl;    
+    std::time_t end_time = std::chrono::system_clock::to_time_t(end);
 
+    std::cout << "Время выполнения: " << std::chrono::duration <double, std::milli> (delta1).count() << " миллисекунд" << std::endl;    
+    std::cout << "Время, когда выполнение закончилось: " << std::ctime(&end_time) << std::endl;
     return 0;
 }

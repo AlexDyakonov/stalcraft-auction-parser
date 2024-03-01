@@ -52,6 +52,8 @@ namespace api_client {
         cpr::Response r = cpr::Get(cpr::Url{url},
                                cpr::Parameters{{"limit", std::to_string(limit)}, {"offset", std::to_string(offset)}},
                                cpr::Bearer{bearer});
+        std::cout << r.header["x-ratelimit-remaining"] << std::endl;
+        std::cout << r.header["x-ratelimit-reset"] << std::endl;
 
         return r.text;
     }
