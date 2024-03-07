@@ -52,8 +52,7 @@ int main(int argc, char* argv[])
 
     for (int i = 10; i < 20; i++) {
         threads.emplace_back([i, total, server, itemId]() {
-            DatabaseManager dbManager; 
-            AuctionItemRepository ai_repo(dbManager);
+            AuctionItemRepository ai_repo(DatabaseManager::CreateNewClient());
 
             int offset = total - i * 200;
             std::vector<AuctionItem> items = utils::parseJsonToAuctionItems(api_client::getItemPrices(server, itemId, 200, offset, std::getenv("EXBO_TOKEN")), server, itemId);

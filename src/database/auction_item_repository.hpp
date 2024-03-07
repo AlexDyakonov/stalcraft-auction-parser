@@ -1,15 +1,14 @@
 #ifndef AUCTION_ITEM_REPOSITORY_HPP
 #define AUCTION_ITEM_REPOSITORY_HPP
 
-#include "../database/database_manager.hpp"
+#include <clickhouse/client.h>
 #include <string>
-#include <nlohmann/json.hpp> 
+#include <vector>
+#include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
-
-struct AuctionItem
-{
+struct AuctionItem {
     std::string itemId;
     std::string server;
     int amount;
@@ -30,13 +29,12 @@ struct AuctionItem
 
 class AuctionItemRepository {
 public:
-    AuctionItemRepository(DatabaseManager& dbManager);
+    explicit AuctionItemRepository(std::unique_ptr<clickhouse::Client> client);
     void AddItem(const AuctionItem& item);
     void AddItems(const std::vector<AuctionItem>& items);
 
 private:
-    DatabaseManager& dbManager;
+    std::unique_ptr<clickhouse::Client> client;
 };
-
 
 #endif
