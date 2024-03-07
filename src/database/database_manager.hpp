@@ -11,7 +11,7 @@ public:
 
     clickhouse::Client* getClient();
     void closeConnection();
-    int initializeTables();
+    static int initializeTables();
     static std::unique_ptr<clickhouse::Client> CreateNewClient();
 
 private:

@@ -31,8 +31,7 @@ int main(int argc, char* argv[])
     utils::loadEnvVariables(".env");
 
     if (argc > 1 && (std::strcmp(argv[1], "--build-tables") == 0 || std::strcmp(argv[1], "--bt") == 0)) {
-        DatabaseManager dbManager; 
-        dbManager.initializeTables();
+        std::cout << DatabaseManager::initializeTables() << std::endl;
         return 0;
     }
 
