@@ -31,18 +31,6 @@ APIClient::APIClient(std::string token) : bearerToken(std::move(token)) {}
     return token;
     }
 
-    std::string APIClient::getItemPrices(const std::string &server, const std::string &itemId, int limit, int offset) {
-        std::string url = utils::getAuctionUrl(server, itemId);     
-
-        cpr::Response response = cpr::Get(cpr::Url{url},
-                                        cpr::Parameters{{"limit", std::to_string(limit)}, {"offset", std::to_string(offset)}},
-                                        cpr::Bearer{bearerToken});
-
-        updateRateLimits(response);
-
-        return response.text;
-    }
-
     int64_t APIClient::getItemTotal(const std::string &server, const std::string &itemId) {
         std::string url = utils::getAuctionUrl(server, itemId);     
 
@@ -61,16 +49,39 @@ APIClient::APIClient(std::string token) : bearerToken(std::move(token)) {}
     void APIClient::updateRateLimits(const cpr::Response& response) {
         std::lock_guard<std::mutex> lock(mutex);
         if (xRatelimitRemaining < 10) {
-        std::cout << xRatelimitRemaining << std::endl;
-        std::cout << xRatelimitReset << std::endl;
+            std::cout << xRatelimitRemaining << std::endl;
+            std::cout << xRatelimitReset << std::endl;
         }
-        
         if (response.header.find("x-ratelimit-remaining") != response.header.end()) {
             xRatelimitRemaining = std::stoi(response.header.at("x-ratelimit-remaining"));
         }
         if (response.header.find("x-ratelimit-reset") != response.header.end()) {
-            xRatelimitReset = std::stoll(response.header.at("x-ratelimit-reset"));
+            xRatelimitReset = std::stoll(response.header.at("x-ratelimit-reset")) / 1000;
         }
+    }
+
+    std::string APIClient::getItemPrices(const std::string &server, const std::string &itemId, int limit, int offset) {
+        {
+            std::unique_lock<std::mutex> lock(mutex);
+            if (xRatelimitRemaining <= 0) {
+                auto now = std::chrono::system_clock::now();
+                std::cout << xRatelimitReset << std::endl;
+                auto resetTimePoint = std::chrono::system_clock::from_time_t(xRatelimitReset + 10);
+                if (now < resetTimePoint) {
+                    lock.unlock(); 
+                    std::this_thread::sleep_until(resetTimePoint);
+                }
+            }
+        }
+
+        std::string url = utils::getAuctionUrl(server, itemId);
+        cpr::Response response = cpr::Get(cpr::Url{url},
+                                        cpr::Parameters{{"limit", std::to_string(limit)}, {"offset", std::to_string(offset)}},
+                                        cpr::Bearer{bearerToken});
+
+        updateRateLimits(response);
+
+        return response.text;
     }
 
 }
