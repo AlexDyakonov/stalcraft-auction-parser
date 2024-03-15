@@ -1,13 +1,12 @@
-#include <iostream>
-#include <string>
-#include <cpr/cpr.h>
-#include <nlohmann/json.hpp>
-using json = nlohmann::json;
-
+#include "api_client.hpp"
 #include "../utils/utils.hpp"
-
+#include <iostream>
+#include <sstream>
 
 namespace api_client {
+
+APIClient::APIClient(std::string token) : bearerToken(std::move(token)) {}
+
     std::string getBearerToken(std::string client_id, std::string client_secret){
     std::string url = "https://exbo.net/oauth/token";
 
@@ -32,37 +31,46 @@ namespace api_client {
     return token;
     }
 
-    size_t getPos(const std::string &url){
-        for (int64_t i = 0; i < url.size() - 1; ++i) {
-            if (url[i] == '/' && url[i + 1] == '/' && i > 8) {
-                return i + 1;
-            }
-        }
-        return -1;
-    }
-
-    std::string getItemPrices(const std::string &server, const std::string &itemId, int limit, int offset, std::string bearer){
-        std::string url = utils::getAuctionUrl(server, itemId);     
-
-        cpr::Response r = cpr::Get(cpr::Url{url},
-                               cpr::Parameters{{"limit", std::to_string(limit)}, {"offset", std::to_string(offset)}},
-                               cpr::Bearer{bearer});
-        std::cout << r.header["x-ratelimit-remaining"] << std::endl;
-        std::cout << r.header["x-ratelimit-reset"] << std::endl;
-
-        return r.text;
-    }
-
-    int64_t getItemTotal(const std::string &server, const std::string &itemId, std::string bearer){
+    std::string APIClient::getItemPrices(const std::string &server, const std::string &itemId, int limit, int offset) {
         std::string url = utils::getAuctionUrl(server, itemId);     
 
         cpr::Response response = cpr::Get(cpr::Url{url},
-                               cpr::Parameters{{"limit", std::to_string(1)}, {"offset", std::to_string(0)}},
-                               cpr::Bearer{bearer});
+                                        cpr::Parameters{{"limit", std::to_string(limit)}, {"offset", std::to_string(offset)}},
+                                        cpr::Bearer{bearerToken});
+
+        updateRateLimits(response);
+
+        return response.text;
+    }
+
+    int64_t APIClient::getItemTotal(const std::string &server, const std::string &itemId) {
+        std::string url = utils::getAuctionUrl(server, itemId);     
+
+        cpr::Response response = cpr::Get(cpr::Url{url},
+                                        cpr::Parameters{{"limit", "1"}, {"offset", "0"}},
+                                        cpr::Bearer{bearerToken});
+
         auto json_response = json::parse(response.text);
         int64_t total = json_response["total"];
-        
+
+        updateRateLimits(response);
+
         return total;
     }
-    
-} 
+
+    void APIClient::updateRateLimits(const cpr::Response& response) {
+        std::lock_guard<std::mutex> lock(mutex);
+        if (xRatelimitRemaining < 10) {
+        std::cout << xRatelimitRemaining << std::endl;
+        std::cout << xRatelimitReset << std::endl;
+        }
+        
+        if (response.header.find("x-ratelimit-remaining") != response.header.end()) {
+            xRatelimitRemaining = std::stoi(response.header.at("x-ratelimit-remaining"));
+        }
+        if (response.header.find("x-ratelimit-reset") != response.header.end()) {
+            xRatelimitReset = std::stoll(response.header.at("x-ratelimit-reset"));
+        }
+    }
+
+}

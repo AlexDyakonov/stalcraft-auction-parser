@@ -40,27 +40,44 @@ int main(int argc, char* argv[])
     //     std::cout << "Read id: " << id << std::endl;
     // }
 
-    const size_t numThreads = 10;
+
+    std::string token = std::getenv("EXBO_TOKEN");
+    api_client::APIClient apiClient(token);
+
+
+       std::string itemId = "4q7pl";
+    std::string server = "eu";
+    int64_t total = apiClient.getItemTotal(server, itemId);
+    std::cout << "Total items: " << total << std::endl;
+
+    size_t numThreads = std::thread::hardware_concurrency();
     std::vector<std::thread> threads;
 
-    int64_t total = api_client::getItemTotal("eu", "4q7pl", std::getenv("EXBO_TOKEN"));
-    std::cout << total << std::endl;
+    int limit = 200; // Максимальное количество элементов за запрос
+    int totalRequests = total / limit + (total % limit != 0 ? 1 : 0); // Общее количество запросов
 
-    std::string itemId = "4q7pl";
-    std::string server = "eu";
+    auto start = std::chrono::high_resolution_clock::now();
 
-    for (int i = 10; i < 20; i++) {
-        threads.emplace_back([i, total, server, itemId]() {
+    for (int i = 0; i < totalRequests; ++i) {
+        threads.emplace_back([i, limit, server, itemId, &apiClient]() {
             AuctionItemRepository ai_repo(DatabaseManager::CreateNewClient());
-
-            int offset = total - i * 200;
-            std::vector<AuctionItem> items = utils::parseJsonToAuctionItems(api_client::getItemPrices(server, itemId, 200, offset, std::getenv("EXBO_TOKEN")), server, itemId);
+            int offset = i * limit; // Смещение для текущего запроса
+            std::vector<AuctionItem> items = utils::parseJsonToAuctionItems(apiClient.getItemPrices(server, itemId, limit, offset), server, itemId);
             ai_repo.AddItems(items);
         });
+
+        if (threads.size() == numThreads || i == totalRequests - 1) {
+            for (auto& thread : threads) {
+                thread.join();
+            }
+            threads.clear();
+        }
     }
-    for (auto& thread : threads) {
-        thread.join();
-    }    
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "Execution time: " << elapsed.count() << " seconds" << std::endl;
+
 
     return 0;
 }
