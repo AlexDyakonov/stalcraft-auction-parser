@@ -20,6 +20,8 @@
 #include "utils/logger_macros.hpp" 
 #include "database/auction_item_repository.hpp"
 #include "api/api_client.hpp"
+#include "services/auction_data_service.hpp"
+
 
 std::shared_ptr<spdlog::logger> logger;
 
@@ -40,39 +42,13 @@ int main(int argc, char* argv[])
     //     std::cout << "Read id: " << id << std::endl;
     // }
 
-
-    std::string token = std::getenv("EXBO_TOKEN");
-    api_client::APIClient apiClient(token);
-
-
-       std::string itemId = "4q7pl";
-    std::string server = "eu";
-    int64_t total = apiClient.getItemTotal(server, itemId);
-    std::cout << "Total items: " << total << std::endl;
-
-    size_t numThreads = std::thread::hardware_concurrency();
-    std::vector<std::thread> threads;
-
-    int limit = 200; // Максимальное количество элементов за запрос
-    int totalRequests = total / limit + (total % limit != 0 ? 1 : 0); // Общее количество запросов
-
     auto start = std::chrono::high_resolution_clock::now();
 
-    for (int i = 0; i < totalRequests; ++i) {
-        threads.emplace_back([i, limit, server, itemId, &apiClient]() {
-            AuctionItemRepository ai_repo(DatabaseManager::CreateNewClient());
-            int offset = i * limit; // Смещение для текущего запроса
-            std::vector<AuctionItem> items = utils::parseJsonToAuctionItems(apiClient.getItemPrices(server, itemId, limit, offset), server, itemId);
-            ai_repo.AddItems(items);
-        });
+    std::string server = "eu";
+    std::string itemId = "4q7pl";
+    std::string token = std::getenv("EXBO_TOKEN");
 
-        if (threads.size() == numThreads || i == totalRequests - 1) {
-            for (auto& thread : threads) {
-                thread.join();
-            }
-            threads.clear();
-        }
-    }
+    services::fetchAndStoreAuctionData(server, itemId, token);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
