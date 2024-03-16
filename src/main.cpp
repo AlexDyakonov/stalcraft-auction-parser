@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
     auto start = std::chrono::high_resolution_clock::now();
 
     std::string server = "eu";
-    std::string itemId = "4q7pl";
+    std::string itemId = "5r5g";
     std::string token = std::getenv("EXBO_TOKEN");
 
     services::fetchAndStoreAuctionData(server, itemId, token);

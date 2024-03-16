@@ -60,28 +60,53 @@ APIClient::APIClient(std::string token) : bearerToken(std::move(token)) {}
         }
     }
 
+    void waitForDate(long long timestamp) {
+        auto now = std::chrono::system_clock::now();
+        auto resetTime = std::chrono::system_clock::from_time_t(timestamp);
+        if (resetTime > now) {
+            std::this_thread::sleep_until(resetTime);
+        }
+    }
+
     std::string APIClient::getItemPrices(const std::string &server, const std::string &itemId, int limit, int offset) {
-        {
-            std::unique_lock<std::mutex> lock(mutex);
-            if (xRatelimitRemaining <= 0) {
-                auto now = std::chrono::system_clock::now();
-                std::cout << xRatelimitReset << std::endl;
-                auto resetTimePoint = std::chrono::system_clock::from_time_t(xRatelimitReset + 10);
-                if (now < resetTimePoint) {
-                    lock.unlock(); 
-                    std::this_thread::sleep_until(resetTimePoint);
+        cpr::Response response;
+        bool requestCompleted = false;
+
+        while (!requestCompleted) {
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                if (xRatelimitRemaining <= 0) {
+                    auto now = std::chrono::system_clock::now();
+                    auto resetTimePoint = std::chrono::system_clock::from_time_t(xRatelimitReset / 1000 + 10); 
+                    if (now < resetTimePoint) {
+                        lock.unlock(); 
+                        std::this_thread::sleep_until(resetTimePoint);
+                    }
                 }
+            }
+
+            std::string url = utils::getAuctionUrl(server, itemId);
+            response = cpr::Get(cpr::Url{url},
+                                cpr::Parameters{{"limit", std::to_string(limit)}, {"offset", std::to_string(offset)}},
+                                cpr::Bearer{bearerToken});
+
+            updateRateLimits(response);
+
+            if (response.status_code == 200) {
+                requestCompleted = true;
+            } else if (response.status_code == 429) { 
+                std::cout << "Rate limit exceeded. Waiting for reset." << std::endl;
+                std::this_thread::sleep_for(std::chrono::seconds(1)); 
+            } else if (response.status_code == 500 || response.status_code == 525) { 
+                std::cerr << "Server error encountered. Status code: " << response.status_code << ". Retrying in 10 minutes." << std::endl;
+                std::this_thread::sleep_for(std::chrono::minutes(10));
+            } else {
+                std::cerr << "Unhandled response status code: " << response.status_code << ". Aborting request." << std::endl;
+                return ""; 
             }
         }
 
-        std::string url = utils::getAuctionUrl(server, itemId);
-        cpr::Response response = cpr::Get(cpr::Url{url},
-                                        cpr::Parameters{{"limit", std::to_string(limit)}, {"offset", std::to_string(offset)}},
-                                        cpr::Bearer{bearerToken});
-
-        updateRateLimits(response);
-
-        return response.text;
+        return response.text; 
     }
 
 }
