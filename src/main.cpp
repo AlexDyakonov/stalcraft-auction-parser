@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
 
     auto start = std::chrono::high_resolution_clock::now();
 
-    std::string server = "eu";
+    std::string server = "ru";
     std::string itemId = "5r5g";
     std::string token = std::getenv("EXBO_TOKEN");
 

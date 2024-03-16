@@ -26,8 +26,15 @@ namespace services {
 
     void fetchAndStoreAuctionData(const std::string& server, const std::string& itemId, const std::string& token) {
         api_client::APIClient apiClient(token);
-        int64_t total = apiClient.getItemTotal(server, itemId);
-        std::cout << "Total items: " << total << std::endl;
+        int64_t total = 0;
+        try {
+            total = apiClient.getItemTotal(server, itemId);
+        } catch (const std::exception& e) {
+            LOG_ERROR("Error fetching total items for server: {}, itemId: {}. Exception: {}", server, itemId, e.what());
+            return;
+        }
+        
+        LOG_INFO("Total items for server: {}, itemId: {}: {}", server, itemId, total);
 
         size_t numThreads = std::thread::hardware_concurrency();
         std::vector<std::thread> threads;
@@ -36,9 +43,19 @@ namespace services {
         int totalRequests = total / limit + (total % limit != 0 ? 1 : 0);
 
         for (int i = 0; i < totalRequests; ++i) {
-            threads.emplace_back([i, limit, server, itemId, &apiClient]() {
+            threads.emplace_back([i, limit, server, itemId, &apiClient, total]() {
                 int offset = i * limit;
-                auto fetchedItems = utils::parseJsonToAuctionItems(apiClient.getItemPrices(server, itemId, limit, offset), server, itemId);
+                std::vector<AuctionItem> fetchedItems;
+                try {
+                    auto jsonResponse = apiClient.getItemPrices(server, itemId, limit, offset);
+                    fetchedItems = utils::parseJsonToAuctionItems(jsonResponse, server, itemId);
+                } catch (const nlohmann::json::parse_error& e) {
+                    LOG_ERROR("JSON parse error for server: {}, itemId: {}, offset: {}. Exception: {}", server, itemId, offset, e.what());
+                    return;
+                } catch (const std::exception& e) {
+                    LOG_ERROR("Unexpected error for server: {}, itemId: {}, offset: {}. Exception: {}", server, itemId, offset, e.what());
+                    return;
+                }
                 
                 {
                     std::lock_guard<std::mutex> guard(bufferMutex);

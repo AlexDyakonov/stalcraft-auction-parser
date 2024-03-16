@@ -1,5 +1,6 @@
 #include "api_client.hpp"
 #include "../utils/utils.hpp"
+#include "../utils/logger_macros.hpp" 
 #include <iostream>
 #include <sstream>
 
@@ -8,27 +9,27 @@ namespace api_client {
 APIClient::APIClient(std::string token) : bearerToken(std::move(token)) {}
 
     std::string getBearerToken(std::string client_id, std::string client_secret){
-    std::string url = "https://exbo.net/oauth/token";
+        std::string url = "https://exbo.net/oauth/token";
 
-    cpr::Response response = cpr::Post(cpr::Url{url},
-                                           cpr::Header{{"Content-Type", "application/x-www-form-urlencoded"}},
-                                           cpr::Payload{{"client_id", client_id},
-                                                        {"client_secret", client_secret},
-                                                        {"grant_type", "client_credentials"}});
+        cpr::Response response = cpr::Post(cpr::Url{url},
+                                            cpr::Header{{"Content-Type", "application/x-www-form-urlencoded"}},
+                                            cpr::Payload{{"client_id", client_id},
+                                                            {"client_secret", client_secret},
+                                                            {"grant_type", "client_credentials"}});
 
-    auto json_response = json::parse(response.text);
+        auto json_response = json::parse(response.text);
 
-    std::string token;
-    try {
-            auto json_response = nlohmann::json::parse(response.text);
-            if (json_response.find("access_token") != json_response.end()) {
-                token = json_response["access_token"];
+        std::string token;
+        try {
+                auto json_response = nlohmann::json::parse(response.text);
+                if (json_response.find("access_token") != json_response.end()) {
+                    token = json_response["access_token"];
+                }
+            } catch (const nlohmann::json::exception& e) {
+                std::cerr << "JSON parse error: " << e.what() << '\n';
             }
-        } catch (const nlohmann::json::exception& e) {
-            std::cerr << "JSON parse error: " << e.what() << '\n';
-        }
 
-    return token;
+        return token;
     }
 
     int64_t APIClient::getItemTotal(const std::string &server, const std::string &itemId) {
@@ -95,13 +96,13 @@ APIClient::APIClient(std::string token) : bearerToken(std::move(token)) {}
             if (response.status_code == 200) {
                 requestCompleted = true;
             } else if (response.status_code == 429) { 
-                std::cout << "Rate limit exceeded. Waiting for reset." << std::endl;
-                std::this_thread::sleep_for(std::chrono::seconds(1)); 
-            } else if (response.status_code == 500 || response.status_code == 525) { 
-                std::cerr << "Server error encountered. Status code: " << response.status_code << ". Retrying in 10 minutes." << std::endl;
+                LOG_ERROR("Rate limit exceeded for server: " + server + ", itemId: " + itemId + ", offset: " + std::to_string(offset) + ". Waiting for reset.");
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            } else if (response.status_code == 500 || response.status_code == 525) {
+                LOG_ERROR("Server error encountered. Status code: " + std::to_string(response.status_code) + ". Retrying in 10 minutes. server: " + server + ", itemId: " + itemId + ", offset: " + std::to_string(offset));
                 std::this_thread::sleep_for(std::chrono::minutes(10));
             } else {
-                std::cerr << "Unhandled response status code: " << response.status_code << ". Aborting request." << std::endl;
+                LOG_ERROR("Unhandled response status code: " + std::to_string(response.status_code) + ". Aborting request for server: " + server + ", itemId: " + itemId + ", offset: " + std::to_string(offset));
                 return ""; 
             }
         }
