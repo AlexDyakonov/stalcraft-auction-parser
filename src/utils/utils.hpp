@@ -10,6 +10,7 @@ namespace utils {
     std::vector<AuctionItem> parseJsonToAuctionItems(const std::string &jsonString, const std::string &server, const std::string &itemId) ;
     std::vector<std::string> readIdListFromFile(const std::string& filename);
     std::string getAuctionUrl(const std::string& server, const std::string& itemId);
+    void writeToSummaryTable(const std::vector<std::string>& lines, bool clearFile);
 }
 
 #endif

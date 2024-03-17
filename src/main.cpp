@@ -42,13 +42,15 @@ int main(int argc, char* argv[])
     //     std::cout << "Read id: " << id << std::endl;
     // }
 
-    auto start = std::chrono::high_resolution_clock::now();
-
-    std::string server = "ru";
+    std::string server = "eu";
     std::string itemId = "5r5g";
     std::string token = std::getenv("EXBO_TOKEN");
 
-    services::fetchAndStoreAuctionData(server, itemId, token);
+    auto start = std::chrono::high_resolution_clock::now();
+
+    std::vector<std::string> lines = {};
+    services::performDataUpdateAndCount(server, itemId, token, lines);
+
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;

@@ -108,4 +108,26 @@ namespace utils {
         return url;
     }
 
+    void writeToSummaryTable(const std::vector<std::string>& lines, bool clearFile = false) {
+        const std::string fileName = "summary_table.csv";
+
+        std::ofstream file(fileName, clearFile ? std::ios::out : (std::ios::out | std::ios::app));
+        
+        if (!file.is_open()) {
+            std::cerr << "Failed to open or create the file: " << fileName << std::endl;
+            return;
+        }
+
+        for (size_t i = 0; i < lines.size(); ++i) {
+            file << lines[i];
+            if (i < lines.size() - 1) {
+                file << ", ";
+            }
+        }
+
+        file << std::endl;
+
+        file.close();
+    }
+
 }

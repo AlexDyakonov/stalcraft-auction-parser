@@ -7,6 +7,7 @@
 #include "../utils/utils.hpp"
 #include "../database/database_manager.hpp"
 #include "../utils/logger_macros.hpp" 
+#include "../utils/utils.hpp" 
 #include "../database/auction_item_repository.hpp"
 #include "../api/api_client.hpp"
 
@@ -24,7 +25,7 @@ namespace services {
         }
     }
 
-    void fetchAndStoreAuctionData(const std::string& server, const std::string& itemId, const std::string& token) {
+    void fetchAndStoreAuctionData(const std::string& server, const std::string& itemId, const std::string& token, std::vector<std::string>& lines) {
         api_client::APIClient apiClient(token);
         int64_t total = 0;
         try {
@@ -34,6 +35,9 @@ namespace services {
             return;
         }
         
+        lines.push_back(itemId);
+        lines.push_back(std::to_string(total));
+
         LOG_INFO("Total items for server: {}, itemId: {}: {}", server, itemId, total);
 
         size_t numThreads = std::thread::hardware_concurrency();
@@ -74,5 +78,16 @@ namespace services {
 
         std::lock_guard<std::mutex> guard(bufferMutex);
         flushItemsToDatabase();
+    }
+
+    void performDataUpdateAndCount(const std::string& server, const std::string& itemId, const std::string& token, std::vector<std::string>& lines) {
+        fetchAndStoreAuctionData(server, itemId, token, lines);
+
+        AuctionItemRepository ai_repo(DatabaseManager::CreateNewClient());
+        int64_t totalCount = ai_repo.CountItemsByItemId(itemId, server);
+
+        lines.push_back(std::to_string(totalCount));
+        LOG_INFO("Total items for server: {}, itemId: {}: {}", server, itemId, totalCount);
+        utils::writeToSummaryTable(lines, false);
     }
 }
