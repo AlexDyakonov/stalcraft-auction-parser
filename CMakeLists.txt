@@ -16,6 +16,7 @@ add_executable(stalcraft-auction-parser
     src/database/auction_item_repository.cpp
     src/api/api_client.cpp
     src/services/auction_data_service.cpp
+    src/cli/command_line_parser.cpp
     )
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
