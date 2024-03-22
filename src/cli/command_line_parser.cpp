@@ -5,6 +5,8 @@
 #include <cstring>
 #include <cstdlib>
 #include <functional>
+#include <iomanip> 
+
 
 cli::CommandLineParser::CommandLineParser() {
     addCommand(Command("--build-tables", "--bt", "Initialize database tables", []() {
@@ -15,6 +17,9 @@ cli::CommandLineParser::CommandLineParser() {
         std::cout << "test" << std::endl;
     }));
 
+    addCommand(Command("--help", "-h", "Display this help and exit", [this]() {
+        this->printHelp();
+    }));
 }
 
 void cli::CommandLineParser::addCommand(const Command& cmd) {
@@ -40,8 +45,15 @@ void cli::CommandLineParser::parseCommandLineArgs(int argc, char* argv[]) {
 }
 
 void cli::CommandLineParser::printHelp() const {
-    std::cout << "Available commands:\n";
-    for (const auto& cmd : commands) {
-        std::cout << cmd.name << ", " << cmd.shortName << " - " << cmd.description << std::endl;
-    }
+        std::cout << "Global Options:\n";
+        for (const auto& cmd : commands) {
+            std::cout << "  ";
+            if (!cmd.shortName.empty()) {
+                std::cout << std::left << std::setw(2) << cmd.shortName << ", ";
+            } else {
+                std::cout << "    ";
+            }
+            std::cout << std::left << std::setw(20) << cmd.name << cmd.description << "\n";
+        }
+        // std::cout << "\nRun '<program> COMMAND --help' for more information on a command.\n";
 }
