@@ -28,6 +28,8 @@ namespace services {
     void fetchAndStoreAuctionData(const std::string& server, const std::string& itemId, const std::string& token, std::vector<std::string>& lines) {
         api_client::APIClient apiClient(token);
         int64_t total = 0;
+        std::string lastItemTime = "";
+
         try {
             total = apiClient.getItemTotal(server, itemId);
         } catch (const std::exception& e) {
@@ -47,12 +49,19 @@ namespace services {
         int totalRequests = total / limit + (total % limit != 0 ? 1 : 0);
 
         for (int i = 0; i < totalRequests; ++i) {
-            threads.emplace_back([i, limit, server, itemId, &apiClient, total]() {
+            threads.emplace_back([i, limit, server, itemId, &apiClient, total, &lastItemTime]() {
                 int offset = i * limit;
                 std::vector<AuctionItem> fetchedItems;
                 try {
                     auto jsonResponse = apiClient.getItemPrices(server, itemId, limit, offset);
+                    if (jsonResponse.empty() || jsonResponse == "[]") {
+                        LOG_ERROR("Empty response for server: {}, itemId: {}, offset: {}. Last item time: {}", server, itemId, offset, lastItemTime);
+                        return;
+                    }
                     fetchedItems = utils::parseJsonToAuctionItems(jsonResponse, server, itemId);
+                    if (!fetchedItems.empty()) {
+                        lastItemTime = fetchedItems.back().time;
+                    }
                 } catch (const nlohmann::json::parse_error& e) {
                     LOG_ERROR("JSON parse error for server: {}, itemId: {}, offset: {}. Exception: {}", server, itemId, offset, e.what());
                     return;
