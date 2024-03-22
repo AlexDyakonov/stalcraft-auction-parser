@@ -3,30 +3,31 @@
 
 #include <string>
 #include <vector>
-#include <iostream>
-#include <functional>
+#include <functional> 
 
 struct Command {
-    std::string name;
-    std::string shortName;
-    std::string description;
-    std::function<void()> action;
+    std::string name; 
+    std::string shortName; 
+    std::string description; 
+    std::function<void(const std::vector<std::string>& args)> action; 
 
-    Command(std::string n, std::string sN, std::string desc, std::function<void()> act)
-        : name(n), shortName(sN), description(desc), action(act) {}
+    Command(std::string n, std::string sN, std::string desc, std::function<void(const std::vector<std::string>& args)> act)
+        : name(std::move(n)), shortName(std::move(sN)), description(std::move(desc)), action(std::move(act)) {}
 };
 
 namespace cli {
-    class CommandLineParser {
-    private:
-        std::vector<Command> commands;
 
-    public:
-        CommandLineParser();
-        void parseCommandLineArgs(int argc, char* argv[]);
-        void addCommand(const Command& cmd);
-        void printHelp() const;
-    };
-}
+class CommandLineParser {
+private:
+    std::vector<Command> commands; 
 
-#endif
+public:
+    CommandLineParser(); 
+    void parseCommandLineArgs(int argc, char* argv[]); 
+    void addCommand(const Command& cmd); 
+    void printHelp() const; 
+};
+
+} 
+
+#endif 
