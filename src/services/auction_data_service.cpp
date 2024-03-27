@@ -100,9 +100,10 @@ namespace services {
         utils::writeToSummaryTable(lines, false);
     }
 
-    void parseDataForAllItems(const std::string& server, const std::string& token, std::vector<std::string>& lines) {
+    void parseDataForAllItems(const std::string& server, const std::string& token) {
         std::vector<std::string> idVector = utils::readIdListFromFile("data/items_id_list");
         for (const auto& itemId : idVector) {
+            std::vector<std::string> lines = {};
             services::parseDataForSingleItem(server, itemId, token, lines);
         }
     }

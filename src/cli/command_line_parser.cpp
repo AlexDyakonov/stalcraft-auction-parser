@@ -57,7 +57,7 @@ cli::CommandLineParser::CommandLineParser() {
 
         if (allFirst) {
             std::cout << "Parsing all items from server: " << server << " for the first time." << std::endl;
-            services::parseDataForAllItems(server, token, lines);
+            services::parseDataForAllItems(server, token);
         } else if (itemFirst && !itemId.empty()) {
             std::cout << "Parsing item " << itemId << " from server: " << server << " for the first time." << std::endl;
             services::parseDataForSingleItem(server, itemId, token, lines);

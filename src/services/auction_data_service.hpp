@@ -7,7 +7,7 @@ namespace services {
 
     void fetchAndStoreAuctionData(const std::string& server, const std::string& itemId, const std::string& token, std::vector<std::string>& lines);
     void parseDataForSingleItem(const std::string& server, const std::string& itemId, const std::string& token, std::vector<std::string>& lines);
-    void parseDataForAllItems(const std::string& server, const std::string& token, std::vector<std::string>& lines);
+    void parseDataForAllItems(const std::string& server, const std::string& token);
 } 
 
 #endif
