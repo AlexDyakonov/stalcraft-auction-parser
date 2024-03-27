@@ -6,6 +6,7 @@
 #include <unistd.h> 
 #include <cstring>
 #include <filesystem> 
+#include <ctime>
 #include "logger_macros.hpp"
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -108,8 +109,17 @@ namespace utils {
         return url;
     }
 
+    std::string getCurrentDate() {
+        time_t now = time(0);
+        struct tm *timeinfo = localtime(&now);
+        char buffer[80];
+        strftime(buffer, 80, "%Y-%m-%d", timeinfo);
+        return std::string(buffer);
+    }
+
     void writeToSummaryTable(const std::vector<std::string>& lines, bool clearFile = false) {
-        const std::string fileName = "summary_table.csv";
+        const std::string currentDate = getCurrentDate();
+        const std::string fileName = "summary_table_" + currentDate + ".csv";
 
         std::ofstream file(fileName, clearFile ? std::ios::out : (std::ios::out | std::ios::app));
         

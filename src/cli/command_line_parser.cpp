@@ -15,6 +15,9 @@ cli::CommandLineParser::CommandLineParser() {
     }));
 
     addCommand(Command("parse", "", "Parse items with given parameters", [](const std::vector<std::string>& args) {
+        std::vector<std::string> lines = {};
+        std::string token = std::getenv("EXBO_TOKEN");
+
         bool help = false;
         std::string server;
         std::string itemId;
@@ -53,19 +56,21 @@ cli::CommandLineParser::CommandLineParser() {
         }
 
         if (allFirst) {
-            std::cout << "Parsing all items from server: " << server << " for the first time..." << std::endl;
+            std::cout << "Parsing all items from server: " << server << " for the first time." << std::endl;
+            services::parseDataForAllItems(server, token, lines);
         } else if (itemFirst && !itemId.empty()) {
-            std::cout << "Parsing item " << itemId << " from server: " << server << " for the first time..." << std::endl;
+            std::cout << "Parsing item " << itemId << " from server: " << server << " for the first time." << std::endl;
+            services::parseDataForSingleItem(server, itemId, token, lines);
         } else if (allReparse) {
-            std::cout << "Reparsing all items from server: " << server << "..." << std::endl;
+            std::cout << "Reparsing new data for all items from server: " << server << "." << std::endl;
         } else if (itemReparse && !itemId.empty()) {
-            std::cout << "Reparsing item " << itemId << " from server: " << server << "..." << std::endl;
+            std::cout << "Reparsing new data for item " << itemId << " from server: " << server << "." << std::endl;
         } else {
             std::cout << "Missing or incorrect arguments for 'parse' command.\n";
         }
     }));
 
-        addCommand(Command("--help", "-h", "Display this help and exit", [this](const std::vector<std::string>& args) {
+    addCommand(Command("--help", "-h", "Display this help and exit", [this](const std::vector<std::string>& args) {
         this->printHelp();
     }));
 

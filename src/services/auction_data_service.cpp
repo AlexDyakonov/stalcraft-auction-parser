@@ -89,7 +89,7 @@ namespace services {
         flushItemsToDatabase();
     }
 
-    void performDataUpdateAndCount(const std::string& server, const std::string& itemId, const std::string& token, std::vector<std::string>& lines) {
+    void parseDataForSingleItem(const std::string& server, const std::string& itemId, const std::string& token, std::vector<std::string>& lines) {
         fetchAndStoreAuctionData(server, itemId, token, lines);
 
         AuctionItemRepository ai_repo(DatabaseManager::CreateNewClient());
@@ -98,5 +98,12 @@ namespace services {
         lines.push_back(std::to_string(totalCount));
         LOG_INFO("Total items for server: {}, itemId: {}: {}", server, itemId, totalCount);
         utils::writeToSummaryTable(lines, false);
+    }
+
+    void parseDataForAllItems(const std::string& server, const std::string& token, std::vector<std::string>& lines) {
+        std::vector<std::string> idVector = utils::readIdListFromFile("data/items_id_list");
+        for (const auto& itemId : idVector) {
+            services::parseDataForSingleItem(server, itemId, token, lines);
+        }
     }
 }
