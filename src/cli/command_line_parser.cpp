@@ -14,40 +14,61 @@ cli::CommandLineParser::CommandLineParser() {
         std::cout << DatabaseManager::initializeTables() << std::endl;
     }));
 
-    addCommand(Command("--fetch-data", "", "Fetch and store auction data", [](const std::vector<std::string>& args) {
-        std::cout << "Fetching and storing auction data..." << std::endl;
-    }));
-
-    addCommand(Command("--help", "-h", "Display this help and exit", [this](const std::vector<std::string>& args) {
-        this->printHelp();
-    }));
-
     addCommand(Command("parse", "", "Parse items with given parameters", [](const std::vector<std::string>& args) {
-        std::string itemId;
+        bool help = false;
         std::string server;
-        bool all = false;
+        std::string itemId;
+        bool allFirst = false;
+        bool itemFirst = false;
+        bool allReparse = false;
+        bool itemReparse = false;
 
         for (size_t i = 0; i < args.size(); ++i) {
-            if (args[i] == "--item" && i + 1 < args.size()) {
+            if (args[i] == "--help" || args[i] == "-h") {
+                help = true;
+            } else if (args[i] == "--all-first") {
+                allFirst = true;
+            } else if (args[i] == "--item-first" && i + 1 < args.size()) {
+                itemFirst = true;
                 itemId = args[++i];
-            } else if (args[i] == "--server" && i + 1 < args.size()) {
+            } else if (args[i] == "--all-reparse") {
+                allReparse = true;
+            } else if (args[i] == "--item-reparse" && i + 1 < args.size()) {
+                itemReparse = true;
+                itemId = args[++i];
+            } else if ((args[i] == "--server" || args[i] == "-s") && i + 1 < args.size()) {
                 server = args[++i];
-            } else if (args[i] == "--new") {
-                all = true;
             }
         }
 
-        if (itemId.empty() || server.empty()) {
-            std::cout << "Missing '--item' or '--server' argument.\n";
+        if (help) {
+            std::cout << "Usage of 'parse' command:\n";
+            std::cout << "--server, -s <serverName>: Specify the server to parse.\n";
+            std::cout << "--item-first <itemId>: Parse a single item from the server for the first time.\n";
+            std::cout << "--all-first: Parse all items from the server for the first time.\n";
+            std::cout << "--item-reparse <itemId>: Reparse a single item from the server.\n";
+            std::cout << "--all-reparse: Reparse all items from the server.\n";
+            std::cout << "--help, -h: Display this help message.\n";
             return;
         }
 
-        if (all) {
-            std::cout << "Parsing all items for server: " << server << " and item ID: " << itemId << "\n";
+        if (allFirst) {
+            std::cout << "Parsing all items from server: " << server << " for the first time..." << std::endl;
+        } else if (itemFirst && !itemId.empty()) {
+            std::cout << "Parsing item " << itemId << " from server: " << server << " for the first time..." << std::endl;
+        } else if (allReparse) {
+            std::cout << "Reparsing all items from server: " << server << "..." << std::endl;
+        } else if (itemReparse && !itemId.empty()) {
+            std::cout << "Reparsing item " << itemId << " from server: " << server << "..." << std::endl;
         } else {
-            std::cout << "Parsing items for server: " << server << " and item ID: " << itemId << "\n";
+            std::cout << "Missing or incorrect arguments for 'parse' command.\n";
         }
     }));
+
+        addCommand(Command("--help", "-h", "Display this help and exit", [this](const std::vector<std::string>& args) {
+        this->printHelp();
+    }));
+
 }
 
 void cli::CommandLineParser::addCommand(const Command& cmd) {
