@@ -92,10 +92,15 @@ std::string AuctionItemRepository::GetLatestItemDate(const std::string& itemId, 
 
     try {
         client->Select(query, [&latestDate](const clickhouse::Block& block) {
-            if (block.GetRowCount() > 0) {
-                auto col = block[0]->As<clickhouse::ColumnString>();
-                if (col->Size() > 0) { 
-                    latestDate = col->At(0);
+            if (block.GetRowCount() > 0 && block[0]->Type()->GetCode() == clickhouse::Type::DateTime) {
+                    auto col = block[0]->As<clickhouse::ColumnDateTime>();
+                if (col && col->Size() > 0) {
+                    auto time_t_value = col->At(0);
+                    std::time_t raw_time = static_cast<std::time_t>(time_t_value);
+                    std::tm* timeinfo = std::gmtime(&raw_time);
+                    char buffer[80];
+                    std::strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", timeinfo);
+                    latestDate = buffer;
                 }
             }
         });
@@ -106,4 +111,5 @@ std::string AuctionItemRepository::GetLatestItemDate(const std::string& itemId, 
 
     return latestDate;
 }
+
 

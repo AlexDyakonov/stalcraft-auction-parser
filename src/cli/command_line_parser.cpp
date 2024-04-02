@@ -7,6 +7,7 @@
 #include <functional>
 #include <iomanip> 
 #include <iostream>
+#include "../database/auction_item_repository.hpp"
 
 
 cli::CommandLineParser::CommandLineParser() {
@@ -66,6 +67,7 @@ cli::CommandLineParser::CommandLineParser() {
             services::parseNewDataForAllItems(server, token);
         } else if (itemReparse && !itemId.empty()) {
             std::cout << "Reparsing new data for item " << itemId << " from server: " << server << "." << std::endl;
+            AuctionItemRepository ai_repo(DatabaseManager::CreateNewClient());
             services::parseNewDataForSingleItem(server, itemId, token);
         } else {
             std::cout << "Missing or incorrect arguments for 'parse' command.\n";
