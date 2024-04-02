@@ -2,6 +2,8 @@
 #include <sstream>
 #include <iostream>
 #include "../utils/logger_macros.hpp"
+#include <clickhouse/columns/nullable.h>
+
 
 AuctionItemRepository::AuctionItemRepository(std::unique_ptr<clickhouse::Client> client)
     : client(std::move(client)) {}
@@ -74,5 +76,34 @@ int64_t AuctionItemRepository::CountItemsByItemId(const std::string& itemId, con
         LOG_ERROR("Exception occurred during CountItemsByItemId execution: {}", e.what());
     }
     return count;
+}
+
+std::string AuctionItemRepository::GetLatestItemDate(const std::string& itemId, const std::string& server) {
+    if (!client) {
+        LOG_ERROR("Client is not initialized");
+        return "";
+    }
+
+    std::ostringstream queryStream;
+    queryStream << "SELECT MAX(time) FROM item_auction_info WHERE itemId = '" << itemId << "' AND server = '" << server << "'";
+
+    std::string query = queryStream.str();
+    std::string latestDate;
+
+    try {
+        client->Select(query, [&latestDate](const clickhouse::Block& block) {
+            if (block.GetRowCount() > 0) {
+                auto col = block[0]->As<clickhouse::ColumnString>();
+                if (col->Size() > 0) { 
+                    latestDate = col->At(0);
+                }
+            }
+        });
+    } catch (const std::exception& e) {
+        LOG_ERROR("Exception occurred during GetLatestItemDate execution: {}", e.what());
+        return "";
+    }
+
+    return latestDate;
 }
 

@@ -33,6 +33,7 @@ public:
     void AddItem(const AuctionItem& item);
     void AddItems(const std::vector<AuctionItem>& items);
     int64_t CountItemsByItemId(const std::string& itemId, const std::string& server);
+    std::string GetLatestItemDate(const std::string& itemId, const std::string& server);
     
 private:
     std::unique_ptr<clickhouse::Client> client;

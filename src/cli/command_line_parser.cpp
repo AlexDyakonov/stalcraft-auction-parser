@@ -63,8 +63,10 @@ cli::CommandLineParser::CommandLineParser() {
             services::parseDataForSingleItem(server, itemId, token, lines);
         } else if (allReparse) {
             std::cout << "Reparsing new data for all items from server: " << server << "." << std::endl;
+            services::parseNewDataForAllItems(server, token);
         } else if (itemReparse && !itemId.empty()) {
             std::cout << "Reparsing new data for item " << itemId << " from server: " << server << "." << std::endl;
+            services::parseNewDataForSingleItem(server, itemId, token);
         } else {
             std::cout << "Missing or incorrect arguments for 'parse' command.\n";
         }

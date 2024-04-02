@@ -107,4 +107,63 @@ namespace services {
             services::parseDataForSingleItem(server, itemId, token, lines);
         }
     }
+
+    void parseNewDataForSingleItem(const std::string& server, const std::string& itemId, const std::string& token) {
+        api_client::APIClient apiClient(token);
+        std::vector<AuctionItem> itemsBuffer;
+        std::string lastItemDate = "";
+
+        AuctionItemRepository ai_repo(DatabaseManager::CreateNewClient());
+        std::string latestDateInDB = ai_repo.GetLatestItemDate(itemId, server);
+
+
+        if (latestDateInDB.empty()) {
+            LOG_INFO("No data found in DB for item: {}, server: {}. Fetching all available data.", itemId, server);
+        } else {
+            LOG_INFO("Latest date in DB for item: {}, server: {} is {}. Fetching new data since this date.", itemId, server, latestDateInDB);
+        }
+
+        int limit = 200; 
+        int offset = 0;
+        bool keepFetching = true;
+
+        while (keepFetching) {
+            std::vector<AuctionItem> fetchedItems;
+            try {
+                auto jsonResponse = apiClient.getItemPrices(server, itemId, limit, offset);
+                if (jsonResponse.empty() || jsonResponse == "[]") {
+                    LOG_INFO("No more new data to fetch for item: {}, server: {}.", itemId, server);
+                    break;
+                }
+                fetchedItems = utils::parseJsonToAuctionItems(jsonResponse, server, itemId);
+                
+                for (const auto& item : fetchedItems) {
+                    if (item.time <= latestDateInDB) {
+                        keepFetching = false;
+                        LOG_INFO("Reached latest known item date in database. Stopping fetch for item: {}, server: {}.", itemId, server);
+                        break;
+                    }
+                    itemsBuffer.push_back(item);
+                    if (itemsBuffer.size() >= batchSize) {
+                        flushItemsToDatabase();
+                    }
+                }
+                offset += limit;
+            } catch (const std::exception& e) {
+                LOG_ERROR("Error while fetching data for item: {}, server: {}. Exception: {}", itemId, server, e.what());
+                break;
+            }
+        }
+        
+        if (!itemsBuffer.empty()) {
+            flushItemsToDatabase();
+        }
+    }
+
+    void parseNewDataForAllItems(const std::string& server, const std::string& token) {
+        std::vector<std::string> idVector = utils::readIdListFromFile("data/items_id_list");
+        for (const auto& itemId : idVector) {
+            services::parseNewDataForSingleItem(server, itemId, token);
+        }
+    }
 }
