@@ -9,7 +9,6 @@
 #include <iostream>
 #include "../database/auction_item_repository.hpp"
 
-
 cli::CommandLineParser::CommandLineParser() {
     addCommand(Command("--build-tables", "--bt", "Initialize database tables", [](const std::vector<std::string>& args) {
         std::cout << DatabaseManager::initializeTables() << std::endl;
