@@ -36,7 +36,7 @@ APIClient::APIClient(std::string token) : bearerToken(std::move(token)) {}
         std::string url = utils::getAuctionUrl(server, itemId);     
 
         cpr::Response response = cpr::Get(cpr::Url{url},
-                                        cpr::Parameters{{"limit", "1"}, {"offset", "0"}},
+                                        cpr::Parameters{{"limit", "1"}, {"offset", "0"}, {"additional", "true"}},
                                         cpr::Bearer{bearerToken});
 
         auto json_response = json::parse(response.text);
@@ -88,7 +88,7 @@ APIClient::APIClient(std::string token) : bearerToken(std::move(token)) {}
 
             std::string url = utils::getAuctionUrl(server, itemId);
             response = cpr::Get(cpr::Url{url},
-                                cpr::Parameters{{"limit", std::to_string(limit)}, {"offset", std::to_string(offset)}},
+                                cpr::Parameters{{"limit", std::to_string(limit)}, {"offset", std::to_string(offset)}, {"additional", "true"}},
                                 cpr::Bearer{bearerToken});
 
             updateRateLimits(response);
