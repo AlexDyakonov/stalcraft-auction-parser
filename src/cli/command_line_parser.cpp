@@ -1,15 +1,17 @@
-#include "command_line_parser.hpp"
-#include "../utils/logger_macros.hpp" 
-#include "../database/database_manager.hpp"
-#include "../services/auction_data_service.hpp"
 #include <cstring>
 #include <cstdlib>
 #include <functional>
 #include <iomanip> 
 #include <iostream>
+#include "command_line_parser.hpp"
+#include "../utils/logger_macros.hpp" 
+#include "../utils/utils.hpp" 
+#include "../database/database_manager.hpp"
+#include "../services/auction_data_service.hpp"
 #include "../database/auction_item_repository.hpp"
 
 cli::CommandLineParser::CommandLineParser() {
+
     addCommand(Command("--build-tables", "--bt", "Initialize database tables", [](const std::vector<std::string>& args) {
         std::cout << DatabaseManager::initializeTables() << std::endl;
     }));
@@ -57,17 +59,17 @@ cli::CommandLineParser::CommandLineParser() {
 
         if (allFirst) {
             std::cout << "Parsing all items from server: " << server << " for the first time." << std::endl;
-            services::parseDataForAllItems(server, token);
+            services::parseDataForAllItems(server, utils::getToken(server));
         } else if (itemFirst && !itemId.empty()) {
             std::cout << "Parsing item " << itemId << " from server: " << server << " for the first time." << std::endl;
-            services::parseDataForSingleItem(server, itemId, token, lines);
+            services::parseDataForSingleItem(server, itemId, utils::getToken(server), lines);
         } else if (allReparse) {
             std::cout << "Reparsing new data for all items from server: " << server << "." << std::endl;
-            services::parseNewDataForAllItems(server, token);
+            services::parseNewDataForAllItems(server, utils::getToken(server));
         } else if (itemReparse && !itemId.empty()) {
             std::cout << "Reparsing new data for item " << itemId << " from server: " << server << "." << std::endl;
             AuctionItemRepository ai_repo(DatabaseManager::CreateNewClient());
-            services::parseNewDataForSingleItem(server, itemId, token);
+            services::parseNewDataForSingleItem(server, itemId, utils::getToken(server));
         } else {
             std::cout << "Missing or incorrect arguments for 'parse' command.\n";
         }

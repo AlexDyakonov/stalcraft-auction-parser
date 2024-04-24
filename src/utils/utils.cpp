@@ -1,4 +1,3 @@
-#include "utils.hpp"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -7,6 +6,8 @@
 #include <cstring>
 #include <filesystem> 
 #include <ctime>
+#include <stdexcept>
+#include "utils.hpp"
 #include "logger_macros.hpp"
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -47,6 +48,32 @@ namespace utils {
             file.close();
         } else {
             LOG_ERROR("Error while retrieving the current working directory");
+        }
+    }
+
+    std::string getToken(const std::string& server) {
+        static const std::map<std::string, std::string> token_map = {
+            {"ru", "EXBO_TOKEN_RU"},
+            {"sea", "EXBO_TOKEN_SEA"},
+            {"na", "EXBO_TOKEN_NA"},
+            {"eu", "EXBO_TOKEN_EU"}
+        };
+
+        auto it = token_map.find(server);
+        if (it != token_map.end()) {
+            const char* env_var = std::getenv(it->second.c_str());
+            if (env_var) {
+                return std::string(env_var);
+            } else {
+                const char* fallback_var = std::getenv("EXBO_TOKEN");
+                if (fallback_var) {
+                    return std::string(fallback_var);
+                } else {
+                    throw std::runtime_error("No valid environment variables found for tokens");
+                }
+            }
+        } else {
+            throw std::runtime_error("Invalid server: " + server);
         }
     }
 
