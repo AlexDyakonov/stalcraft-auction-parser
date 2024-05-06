@@ -47,13 +47,12 @@ std::unique_ptr<clickhouse::Client> DatabaseManager::CreateNewClient() {
 }
 
 int DatabaseManager::initializeTables(){
-    auto client = CreateNewClient();
-    if (!client) {
-        LOG_ERROR("Failed to create ClickHouse client.");
-        return -1;
-    }
-
-    try {
+        try {
+            auto client = CreateNewClient();
+        if (!client) {
+            LOG_ERROR("Failed to create ClickHouse client.");
+            return -1;
+        }
         client->Execute("CREATE TABLE IF NOT EXISTS item_auction_info (uuid UUID DEFAULT generateUUIDv4(), itemId String, amount Int32, price Float64, time DateTime, additional String, server String) ENGINE = MergeTree() ORDER BY (itemId, time, uuid);");
         LOG_INFO("Table \"item_auction_info\" created or exists.");
     } catch (const std::exception& e) {

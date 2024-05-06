@@ -51,12 +51,25 @@ namespace utils {
         }
     }
 
-    std::string getToken(const std::string& server) {
+    std::string getToken(const std::string& server, bool daily) {
+        if (daily) {
+            const char* env_var = std::getenv("EXBO_TOKEN_DAILY");
+            if (env_var) {
+                return std::string(env_var);
+            } else {
+                const char* fallback_var = std::getenv("EXBO_TOKEN");
+                if (fallback_var) {
+                    return std::string(fallback_var);
+                } else {
+                    throw std::runtime_error("No valid environment variables found for tokens");
+                }
+            }
+        }
         static const std::map<std::string, std::string> token_map = {
-            {"ru", "EXBO_TOKEN_RU"},
-            {"sea", "EXBO_TOKEN_SEA"},
-            {"na", "EXBO_TOKEN_NA"},
-            {"eu", "EXBO_TOKEN_EU"}
+            {"ru", "EXBO_TOKEN_RU_EU"},
+            {"eu", "EXBO_TOKEN_RU_EU"},
+            {"sea", "EXBO_TOKEN_NA_SEA"},
+            {"na", "EXBO_TOKEN_NA_SEA"}
         };
 
         auto it = token_map.find(server);
@@ -166,5 +179,19 @@ namespace utils {
 
         file.close();
     }
+    
+    std::string convertTime(const std::string& apiTime) {
+        std::tm t = {};
+        std::istringstream ss(apiTime);
+        ss >> std::get_time(&t, "%Y-%m-%dT%H:%M:%S");
+        if (ss.fail()) {
+            return "";
+        }
+        std::ostringstream oss;
+        oss << std::put_time(&t, "%Y-%m-%d %H:%M:%S");
+        return oss.str();
+    }
+
+
 
 }

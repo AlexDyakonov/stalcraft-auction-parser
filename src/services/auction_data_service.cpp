@@ -17,6 +17,13 @@ namespace services {
     std::mutex bufferMutex;
     const size_t batchSize = 1000;
 
+    std::time_t parseDateTime(const std::string& datetime) {
+        std::tm tm = {};
+        std::istringstream ss(datetime);
+        ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
+        return std::mktime(&tm);
+    }
+
     void flushItemsToDatabase() {
         if (!itemsBuffer.empty()) {
             auto ai_repo = AuctionItemRepository(DatabaseManager::CreateNewClient());
@@ -108,62 +115,83 @@ namespace services {
         }
     }
 
-    void parseNewDataForSingleItem(const std::string& server, const std::string& itemId, const std::string& token) {
+    void fetchAndStoreNewAuctionData(const std::string& server, const std::string& itemId, const std::string& token, std::vector<std::string>& lines) {
         api_client::APIClient apiClient(token);
-        std::vector<AuctionItem> itemsBuffer;
-        std::string lastItemDate = "";
-
         AuctionItemRepository ai_repo(DatabaseManager::CreateNewClient());
-        std::string latestDateInDB = ai_repo.GetLatestItemDate(itemId, server);
+        std::string lastKnownTimeString = ai_repo.GetLatestItemDate(itemId, server);
+        std::time_t lastKnownTime = parseDateTime(lastKnownTimeString);
 
-
-        if (latestDateInDB.empty()) {
-            LOG_INFO("No data found in DB for item: {}, server: {}. Fetching all available data.", itemId, server);
-        } else {
-            LOG_INFO("Latest date in DB for item: {}, server: {} is {}. Fetching new data since this date.", itemId, server, latestDateInDB);
+        int64_t total = apiClient.getItemTotal(server, itemId); 
+        if (total <= 0) {
+            LOG_INFO("No items to fetch for server: {}, itemId: {}", server, itemId);
+            return;
         }
 
+        size_t numThreads = std::thread::hardware_concurrency();
+        std::vector<std::thread> threads;
         int limit = 200; 
-        int offset = 0;
-        bool keepFetching = true;
+        int totalRequests = total / limit + (total % limit != 0 ? 1 : 0);
+        std::atomic<bool> stopFetching = false;
 
-        while (keepFetching) {
-            std::vector<AuctionItem> fetchedItems;
-            try {
+        for (int i = 0; i < totalRequests && !stopFetching.load(); ++i) {
+            threads.emplace_back([&, i, limit, server, itemId]() {
+                int offset = i * limit;
+                std::vector<AuctionItem> fetchedItems;
                 auto jsonResponse = apiClient.getItemPrices(server, itemId, limit, offset);
-                if (jsonResponse.empty() || jsonResponse == "[]") {
-                    LOG_INFO("No more new data to fetch for item: {}, server: {}.", itemId, server);
-                    break;
-                }
                 fetchedItems = utils::parseJsonToAuctionItems(jsonResponse, server, itemId);
-                
                 for (const auto& item : fetchedItems) {
-                    if (item.time <= latestDateInDB) {
-                        keepFetching = false;
-                        LOG_INFO("Reached latest known item date in database. Stopping fetch for item: {}, server: {}.", itemId, server);
+                    std::time_t itemTime = parseDateTime(item.time);
+                    
+                    if (itemTime <= lastKnownTime) {
+                        stopFetching.store(true);
                         break;
                     }
-                    itemsBuffer.push_back(item);
+                }
+
+                if (!stopFetching.load()) {
+                    std::lock_guard<std::mutex> guard(bufferMutex);
+                    itemsBuffer.insert(itemsBuffer.end(), fetchedItems.begin(), fetchedItems.end());
                     if (itemsBuffer.size() >= batchSize) {
                         flushItemsToDatabase();
                     }
                 }
-                offset += limit;
-            } catch (const std::exception& e) {
-                LOG_ERROR("Error while fetching data for item: {}, server: {}. Exception: {}", itemId, server, e.what());
-                break;
+            });
+
+            if (threads.size() == numThreads || i == totalRequests - 1) {
+                for (auto& thread : threads) {
+                    if (thread.joinable()) {
+                        thread.join();
+                    }
+                }
+                threads.clear();
             }
         }
-        
+
         if (!itemsBuffer.empty()) {
+            std::lock_guard<std::mutex> guard(bufferMutex);
             flushItemsToDatabase();
         }
     }
 
+    void parseNewDataForSingleItem(const std::string& server, const std::string& itemId, const std::string& token, std::vector<std::string>& lines) {
+        fetchAndStoreNewAuctionData(server, itemId, token, lines);
+
+        AuctionItemRepository ai_repo(DatabaseManager::CreateNewClient());
+        int64_t newCount = ai_repo.CountItemsByItemId(itemId, server);
+
+        lines.push_back(std::to_string(newCount));
+        LOG_INFO("New items parsed for server: {}, itemId: {}: {}", server, itemId, newCount);
+        utils::writeToSummaryTable(lines, true);
+    }
+
     void parseNewDataForAllItems(const std::string& server, const std::string& token) {
-        std::vector<std::string> idVector = utils::readIdListFromFile("data/items_id_list");
+        std::vector<std::string> idVector = utils::readIdListFromFile("data/items_id_list"); 
+
         for (const auto& itemId : idVector) {
-            services::parseNewDataForSingleItem(server, itemId, token);
+            std::vector<std::string> lines;
+            parseNewDataForSingleItem(server, itemId, token, lines);
+            LOG_INFO("Completed parsing new data for item: {}", itemId);
         }
     }
+    
 }

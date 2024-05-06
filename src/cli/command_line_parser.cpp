@@ -59,17 +59,17 @@ cli::CommandLineParser::CommandLineParser() {
 
         if (allFirst) {
             std::cout << "Parsing all items from server: " << server << " for the first time." << std::endl;
-            services::parseDataForAllItems(server, utils::getToken(server));
+            services::parseDataForAllItems(server, utils::getToken(server, false));
         } else if (itemFirst && !itemId.empty()) {
             std::cout << "Parsing item " << itemId << " from server: " << server << " for the first time." << std::endl;
-            services::parseDataForSingleItem(server, itemId, utils::getToken(server), lines);
+            services::parseDataForSingleItem(server, itemId, utils::getToken(server, false), lines);
         } else if (allReparse) {
             std::cout << "Reparsing new data for all items from server: " << server << "." << std::endl;
-            services::parseNewDataForAllItems(server, utils::getToken(server));
+            services::parseNewDataForAllItems(server, utils::getToken(server, true));
         } else if (itemReparse && !itemId.empty()) {
             std::cout << "Reparsing new data for item " << itemId << " from server: " << server << "." << std::endl;
             AuctionItemRepository ai_repo(DatabaseManager::CreateNewClient());
-            services::parseNewDataForSingleItem(server, itemId, utils::getToken(server));
+            services::parseNewDataForSingleItem(server, itemId, utils::getToken(server, true), lines);
         } else {
             std::cout << "Missing or incorrect arguments for 'parse' command.\n";
         }

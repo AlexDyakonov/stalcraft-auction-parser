@@ -49,9 +49,8 @@ APIClient::APIClient(std::string token) : bearerToken(std::move(token)) {}
 
     void APIClient::updateRateLimits(const cpr::Response& response) {
         std::lock_guard<std::mutex> lock(mutex);
-        if (xRatelimitRemaining < 10) {
-            std::cout << xRatelimitRemaining << std::endl;
-            std::cout << xRatelimitReset << std::endl;
+        if (xRatelimitRemaining == 0) {
+            LOG_WARN("xRatelimitRemaining is zero.");
         }
         if (response.header.find("x-ratelimit-remaining") != response.header.end()) {
             xRatelimitRemaining = std::stoi(response.header.at("x-ratelimit-remaining"));
