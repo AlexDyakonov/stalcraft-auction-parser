@@ -2,6 +2,7 @@ version: '3'
 services:
   clickhouse-server:
     image: yandex/clickhouse-server:latest
+    hostname: clickhouse-server
     ports:
       - "${CLICKHOUSE_PORT:-9000}:9000"
       - "${CLICKHOUSE_HTTP_PORT:-8123}:8123"
@@ -12,6 +13,8 @@ services:
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:${CLICKHOUSE_HTTP_PORT:-8123}/ping || exit 1
     restart: unless-stopped
+    networks:
+      - clickhouse-network
   
   tabix:
     image: spoonest/clickhouse-tabix-web-client:latest
@@ -22,3 +25,7 @@ services:
 
 volumes:
   clickhouse_data:
+
+networks:
+  clickhouse-network:
+    external: true

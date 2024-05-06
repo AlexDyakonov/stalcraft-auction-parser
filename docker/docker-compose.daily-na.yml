@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  parser-first-na:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: ["parse", "-s", "na", "--all-reparse"]  
+    networks:
+      - clickhouse-network
+
+networks:
+  clickhouse-network:
+    external: true

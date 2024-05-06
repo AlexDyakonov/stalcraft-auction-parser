@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  parser-bt:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: ["--bt"]  
+    networks:
+      - clickhouse-network
+
+networks:
+  clickhouse-network:
+    external: true
