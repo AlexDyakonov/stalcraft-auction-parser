@@ -59,25 +59,41 @@ namespace services {
             threads.emplace_back([i, limit, server, itemId, &apiClient, total, &lastItemTime]() {
                 int offset = i * limit;
                 std::vector<AuctionItem> fetchedItems;
-                try {
-                    auto jsonResponse = apiClient.getItemPrices(server, itemId, limit, offset);
-                    if (jsonResponse.empty() || jsonResponse == "[]") {
-                        LOG_ERROR("Empty response for server: {}, itemId: {}, offset: {}. Last item time: {}", server, itemId, offset, lastItemTime);
+                bool success = false;
+                
+                for (int attempt = 1; attempt <= 5; ++attempt) {
+                    try {
+                        auto jsonResponse = apiClient.getItemPrices(server, itemId, limit, offset);
+                        
+                        if (jsonResponse.empty() || jsonResponse == "[]") {
+                            LOG_ERROR("Attempt {}: Empty response for server: {}, itemId: {}, offset: {}. Last item time: {}", attempt, server, itemId, offset, lastItemTime);
+
+                            if (attempt == 5) {
+                                LOG_ERROR("Final attempt failed. No more retries. Server: {}, itemId: {}, offset: {}", server, itemId, offset);
+                                return;
+                            }
+
+                            LOG_INFO("Waiting 10 min before new attempt for server: {}, itemId: {}, offset: {}. Last item time: {}", server, itemId, offset, lastItemTime);                            
+                            std::this_thread::sleep_for(std::chrono::minutes(3));
+                            continue;
+                        }
+                        
+                        fetchedItems = utils::parseJsonToAuctionItems(jsonResponse, server, itemId);
+                        if (!fetchedItems.empty()) {
+                            lastItemTime = fetchedItems.back().time;
+                            success = true;
+                            break;
+                        }
+                    } catch (const nlohmann::json::parse_error& e) {
+                        LOG_ERROR("JSON parse error for server: {}, itemId: {}, offset: {}. Exception: {}", server, itemId, offset, e.what());
+                        return;
+                    } catch (const std::exception& e) {
+                        LOG_ERROR("Unexpected error for server: {}, itemId: {}, offset: {}. Exception: {}", server, itemId, offset, e.what());
                         return;
                     }
-                    fetchedItems = utils::parseJsonToAuctionItems(jsonResponse, server, itemId);
-                    if (!fetchedItems.empty()) {
-                        lastItemTime = fetchedItems.back().time;
-                    }
-                } catch (const nlohmann::json::parse_error& e) {
-                    LOG_ERROR("JSON parse error for server: {}, itemId: {}, offset: {}. Exception: {}", server, itemId, offset, e.what());
-                    return;
-                } catch (const std::exception& e) {
-                    LOG_ERROR("Unexpected error for server: {}, itemId: {}, offset: {}. Exception: {}", server, itemId, offset, e.what());
-                    return;
                 }
                 
-                {
+                if (success) {
                     std::lock_guard<std::mutex> guard(bufferMutex);
                     itemsBuffer.insert(itemsBuffer.end(), fetchedItems.begin(), fetchedItems.end());
                     if (itemsBuffer.size() >= batchSize) {
@@ -85,11 +101,6 @@ namespace services {
                     }
                 }
             });
-
-            if (threads.size() == numThreads || i == totalRequests - 1) {
-                for (auto& thread : threads) thread.join();
-                threads.clear();
-            }
         }
 
         std::lock_guard<std::mutex> guard(bufferMutex);
@@ -133,26 +144,50 @@ namespace services {
         int totalRequests = total / limit + (total % limit != 0 ? 1 : 0);
         std::atomic<bool> stopFetching = false;
 
-        for (int i = 0; i < totalRequests && !stopFetching.load(); ++i) {
+        for (int i = 0; i < totalRequests; ++i) {
             threads.emplace_back([&, i, limit, server, itemId]() {
                 int offset = i * limit;
                 std::vector<AuctionItem> fetchedItems;
-                auto jsonResponse = apiClient.getItemPrices(server, itemId, limit, offset);
-                fetchedItems = utils::parseJsonToAuctionItems(jsonResponse, server, itemId);
-                for (const auto& item : fetchedItems) {
-                    std::time_t itemTime = parseDateTime(item.time);
-                    
-                    if (itemTime <= lastKnownTime) {
-                        stopFetching.store(true);
+                bool success = false;
+
+                for (int attempt = 1; attempt <= 5; ++attempt) {
+                    auto jsonResponse = apiClient.getItemPrices(server, itemId, limit, offset);
+
+                    if (jsonResponse.empty() || jsonResponse == "[]") {
+                        LOG_ERROR("Attempt {}: Empty response for server: {}, itemId: {}, offset: {}", attempt, server, itemId, offset);
+                        
+                        if (attempt == 5) {
+                            LOG_ERROR("Final attempt failed. No more retries. Server: {}, itemId: {}, offset: {}", server, itemId, offset);
+                            return;
+                        }
+                        
+                        std::this_thread::sleep_for(std::chrono::minutes(3));
+                        continue;
+                    }
+
+                    fetchedItems = utils::parseJsonToAuctionItems(jsonResponse, server, itemId);
+                    if (!fetchedItems.empty()) {
+                        success = true;
                         break;
                     }
                 }
 
-                if (!stopFetching.load()) {
-                    std::lock_guard<std::mutex> guard(bufferMutex);
-                    itemsBuffer.insert(itemsBuffer.end(), fetchedItems.begin(), fetchedItems.end());
-                    if (itemsBuffer.size() >= batchSize) {
-                        flushItemsToDatabase();
+                if (success) {
+                    for (const auto& item : fetchedItems) {
+                        std::time_t itemTime = parseDateTime(item.time);
+                        
+                        if (itemTime <= lastKnownTime) {
+                            stopFetching.store(true);
+                            break;
+                        }
+                    }
+
+                    if (!stopFetching.load()) {
+                        std::lock_guard<std::mutex> guard(bufferMutex);
+                        itemsBuffer.insert(itemsBuffer.end(), fetchedItems.begin(), fetchedItems.end());
+                        if (itemsBuffer.size() >= batchSize) {
+                            flushItemsToDatabase();
+                        }
                     }
                 }
             });

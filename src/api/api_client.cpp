@@ -94,6 +94,7 @@ APIClient::APIClient(std::string token) : bearerToken(std::move(token)) {}
 
             if (response.status_code == 200) {
                 requestCompleted = true;
+                LOG_INFO("Response successfully get for server : " + server + ", itemId: " + itemId + ", offset: " + std::to_string(offset) + ".");
             } else if (response.status_code == 429) { 
                 LOG_ERROR("Rate limit exceeded for server: " + server + ", itemId: " + itemId + ", offset: " + std::to_string(offset) + ". Waiting for reset.");
                 std::this_thread::sleep_for(std::chrono::seconds(1));
